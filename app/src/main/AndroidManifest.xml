@@ -13,7 +13,8 @@
         android:theme="@style/Theme.Nimons360">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.auth.LoginActivity"
+
             android:exported="true">
 
             <intent-filter>
@@ -22,6 +23,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".ui.home.HomeActivity" />
     </application>
 
 </manifest>
