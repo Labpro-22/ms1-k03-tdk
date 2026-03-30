@@ -25,6 +25,11 @@
         </activity>
 
         <activity android:name=".ui.home.HomeActivity" />
+        <activity android:name=".ui.profile.ProfileActivity" />
+        <activity android:name=".ui.map.MapActivity" />
+        <activity android:name=".ui.families.FamiliesActivity" />
+        <activity android:name=".ui.families.CreateFamilyActivity" />
+        <activity android:name=".ui.families.FamilyDetailActivity" />
     </application>
 
 </manifest>
