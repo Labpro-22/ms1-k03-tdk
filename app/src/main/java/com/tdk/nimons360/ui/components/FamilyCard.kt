@@ -14,25 +14,30 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.tdk.nimons360.ui.theme.NimonsColors
 
 data class FamilyUiModel(
     val id: Int,
     val name: String,
     val memberCount: Int,
     val memberInitials: List<String>,
-    val iconEmoji: String = "🏠"
+    val iconUrl: String
 )
 
 private val avatarColors = listOf(
@@ -67,9 +72,9 @@ private fun AvatarGroup(
     maxVisible: Int = 3
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        initials.take(maxVisible).forEachIndexed { index, initials ->
+        initials.take(maxVisible).forEachIndexed { index, initial ->
             SmallAvatar(
-                text = initials,
+                text = initial,
                 bgColor = avatarColors[index % avatarColors.size]
             )
         }
@@ -79,16 +84,39 @@ private fun AvatarGroup(
             Box(
                 modifier = Modifier
                     .size(22.dp)
-                    .background(Color.LightGray, CircleShape),
+                    .background(Color(0xFFD9D9D9), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "+$extra",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.DarkGray
+                    color = NimonsColors.TextSecondary
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun FamilyIcon(
+    iconUrl: String,
+    contentDescription: String,
+    backgroundColor: Color
+) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .background(backgroundColor, RoundedCornerShape(10.dp)),
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model = iconUrl,
+            contentDescription = contentDescription,
+            modifier = Modifier
+                .size(24.dp)
+                .clip(RoundedCornerShape(6.dp)),
+            contentScale = ContentScale.Fit
+        )
     }
 }
 
@@ -102,17 +130,17 @@ fun MyFamilyCard(
             .width(140.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = NimonsColors.CardBackground
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(Color(0xFFFFF3E0), RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = family.iconEmoji)
-            }
+            FamilyIcon(
+                iconUrl = family.iconUrl,
+                contentDescription = "${family.name} icon",
+                backgroundColor = NimonsColors.IconBadgePeach
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -120,6 +148,7 @@ fun MyFamilyCard(
                 text = family.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                color = NimonsColors.TextPrimary,
                 maxLines = 2
             )
 
@@ -128,7 +157,7 @@ fun MyFamilyCard(
             Text(
                 text = "${family.memberCount} members",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = NimonsColors.TextSecondary
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -144,42 +173,57 @@ fun DiscoverFamilyRow(
     onClick: () -> Unit,
     onJoinClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp, horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = NimonsColors.DiscoverContainer,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .background(Color(0xFFFFF9C4), RoundedCornerShape(10.dp)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 14.dp, horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = family.iconEmoji)
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = family.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2
+            FamilyIcon(
+                iconUrl = family.iconUrl,
+                contentDescription = "${family.name} icon",
+                backgroundColor = NimonsColors.IconBadgeYellow
             )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = family.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = NimonsColors.TextPrimary,
+                    maxLines = 2
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            AvatarGroup(initials = family.memberInitials, maxVisible = 3)
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            TextButton(
+                onClick = onJoinClick,
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = NimonsColors.JoinContainer,
+                    contentColor = NimonsColors.JoinText
+                ),
+                shape = RoundedCornerShape(999.dp)
+            ) {
+                Text(
+                    text = "Join",
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        AvatarGroup(initials = family.memberInitials, maxVisible = 3)
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        TextButton(onClick = onJoinClick) {
-            Text("Join")
-        }
-
     }
 }
