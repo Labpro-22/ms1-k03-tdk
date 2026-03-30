@@ -25,6 +25,8 @@ import com.tdk.nimons360.ui.components.BottomNavDestination
 import com.tdk.nimons360.ui.components.DiscoverFamilyRow
 import com.tdk.nimons360.ui.components.FamilyUiModel
 import com.tdk.nimons360.ui.components.MyFamilyCard
+import com.tdk.nimons360.ui.theme.NimonsColors
+import androidx.compose.foundation.background
 
 @Composable
 fun HomeScreen(
@@ -69,6 +71,7 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(NimonsColors.ScreenBackground)
                     .padding(innerPadding)
             ) {
                 CircularProgressIndicator(modifier = Modifier.padding(24.dp))

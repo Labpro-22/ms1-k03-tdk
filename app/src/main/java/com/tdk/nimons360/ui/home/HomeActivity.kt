@@ -1,5 +1,6 @@
 package com.tdk.nimons360.ui.home
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -7,11 +8,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.lifecycleScope
 import com.tdk.nimons360.data.local.SessionManager
+import com.tdk.nimons360.data.model.DiscoverFamily
+import com.tdk.nimons360.data.model.MyFamily
 import com.tdk.nimons360.data.remote.RetrofitClient
 import com.tdk.nimons360.ui.auth.LoginActivity
 import com.tdk.nimons360.ui.components.FamilyUiModel
+import com.tdk.nimons360.ui.families.CreateFamilyActivity
+import com.tdk.nimons360.ui.families.FamilyDetailActivity
+import com.tdk.nimons360.ui.families.FamiliesActivity
+import com.tdk.nimons360.ui.map.MapActivity
+import com.tdk.nimons360.ui.profile.ProfileActivity
+import com.tdk.nimons360.utils.FamilyIcons
 import kotlinx.coroutines.launch
-import android.content.Intent
 
 class HomeActivity : ComponentActivity() {
 
@@ -28,28 +36,40 @@ class HomeActivity : ComponentActivity() {
         }
 
         setContent {
-            var fullName by remember { mutableStateOf("Labpro ITB") }
+            var fullName by remember { mutableStateOf("User") }
             var isLoading by remember { mutableStateOf(true) }
-
-            val myFamilies = remember { dummyMyFamilies() }
-            val discoverFamilies = remember { dummyDiscoverFamilies() }
+            var myFamilies by remember { mutableStateOf(emptyList<FamilyUiModel>()) }
+            var discoverFamilies by remember { mutableStateOf(emptyList<FamilyUiModel>()) }
 
             LaunchedEffect(Unit) {
                 lifecycleScope.launch {
                     try {
-                        val response = RetrofitClient.create(this@HomeActivity).getMe()
+                        val api = RetrofitClient.create(this@HomeActivity)
 
-                        when {
-                            response.code() == 409 -> {
-                                sessionManager.clearSession()
-                                goToLogin()
-                            }
-
-                            response.isSuccessful && response.body() != null -> {
-                                fullName = response.body()!!.data.fullName
-                            }
+                        val meResponse = api.getMe()
+                        if (handleSessionExpired(meResponse.code())) return@launch
+                        if (meResponse.isSuccessful && meResponse.body() != null) {
+                            fullName = meResponse.body()!!.data.fullName
                         }
-                    } catch (_: Exception) {
+
+                        val myFamiliesResponse = api.getMyFamilies()
+                        if (handleSessionExpired(myFamiliesResponse.code())) return@launch
+                        if (myFamiliesResponse.isSuccessful && myFamiliesResponse.body() != null) {
+                            myFamilies = mapMyFamiliesToUi(myFamiliesResponse.body()!!.data)
+                        }
+
+                        val discoverFamiliesResponse = api.getDiscoverFamilies()
+                        if (handleSessionExpired(discoverFamiliesResponse.code())) return@launch
+                        if (discoverFamiliesResponse.isSuccessful && discoverFamiliesResponse.body() != null) {
+                            discoverFamilies = mapDiscoverFamiliesToUi(discoverFamiliesResponse.body()!!.data)
+                        }
+
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            this@HomeActivity,
+                            "Gagal memuat data Home",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } finally {
                         isLoading = false
                     }
@@ -61,29 +81,62 @@ class HomeActivity : ComponentActivity() {
                 isLoading = isLoading,
                 myFamilies = myFamilies,
                 discoverFamilies = discoverFamilies,
+
                 onProfileClick = {
-                    Toast.makeText(this, "TODO: Open Profile", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@HomeActivity, ProfileActivity::class.java))
                 },
                 onCreateFamilyClick = {
-                    Toast.makeText(this, "TODO: Open Create Family", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@HomeActivity, CreateFamilyActivity::class.java))
                 },
                 onHomeClick = {
                     // sudah di Home
                 },
                 onMapClick = {
-                    Toast.makeText(this, "TODO: Open Map", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@HomeActivity, MapActivity::class.java))
+                    finish()
                 },
                 onFamiliesClick = {
-                    Toast.makeText(this, "TODO: Open Families", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@HomeActivity, FamiliesActivity::class.java))
+                    finish()
                 },
                 onFamilyClick = { familyId ->
-                    Toast.makeText(this, "Klik family id=$familyId", Toast.LENGTH_SHORT).show()
+                    val family = myFamilies.find { it.id == familyId }
+                        ?: discoverFamilies.find { it.id == familyId }
+
+                    val isMember = myFamilies.any { it.id == familyId }
+
+                    startActivity(
+                        FamilyDetailActivity.newIntent(
+                            context = this@HomeActivity,
+                            familyId = familyId,
+                            familyName = family?.name ?: "Family Detail",
+                            isMember = isMember
+                        )
+                    )
                 },
                 onJoinClick = { familyId ->
-                    Toast.makeText(this, "Join family id=$familyId", Toast.LENGTH_SHORT).show()
+                    val family = discoverFamilies.find { it.id == familyId }
+
+                    startActivity(
+                        FamilyDetailActivity.newIntent(
+                            context = this@HomeActivity,
+                            familyId = familyId,
+                            familyName = family?.name ?: "Join Family",
+                            isMember = false
+                        )
+                    )
                 }
             )
         }
+    }
+
+    private fun handleSessionExpired(code: Int): Boolean {
+        if (code == 409) {
+            sessionManager.clearSession()
+            goToLogin()
+            return true
+        }
+        return false
     }
 
     private fun goToLogin() {
@@ -95,55 +148,35 @@ class HomeActivity : ComponentActivity() {
         finish()
     }
 
-    private fun dummyMyFamilies(): List<FamilyUiModel> {
-        return listOf(
+
+
+    private fun mapMyFamiliesToUi(items: List<MyFamily>): List<FamilyUiModel> {
+        return items.map { family ->
             FamilyUiModel(
-                id = 1,
-                name = "Maulana Family",
-                memberCount = 4,
-                memberInitials = listOf("L", "R", "A", "B"),
-                iconEmoji = "🏠"
-            ),
-            FamilyUiModel(
-                id = 2,
-                name = "Study Group",
-                memberCount = 7,
-                memberInitials = listOf("B", "C", "D", "E"),
-                iconEmoji = "🏫"
-            ),
-            FamilyUiModel(
-                id = 3,
-                name = "Camping Trip",
-                memberCount = 3,
-                memberInitials = listOf("E", "F", "G"),
-                iconEmoji = "🏕️"
+                id = family.id,
+                name = family.name,
+                memberCount = family.members.size,
+                memberInitials = family.members.map { extractInitial(it.fullName) },
+                iconUrl = family.iconUrl
             )
-        )
+        }
     }
 
-    private fun dummyDiscoverFamilies(): List<FamilyUiModel> {
-        return listOf(
+    private fun mapDiscoverFamiliesToUi(items: List<DiscoverFamily>): List<FamilyUiModel> {
+        return items.map { family ->
             FamilyUiModel(
-                id = 10,
-                name = "Neighborhood Watch",
-                memberCount = 5,
-                memberInitials = listOf("S", "J", "L"),
-                iconEmoji = "🌟"
-            ),
-            FamilyUiModel(
-                id = 11,
-                name = "ITB 2022 Batch",
-                memberCount = 8,
-                memberInitials = listOf("A", "B", "C"),
-                iconEmoji = "🎓"
-            ),
-            FamilyUiModel(
-                id = 12,
-                name = "Weekend Warriors",
-                memberCount = 6,
-                memberInitials = listOf("M", "N", "K"),
-                iconEmoji = "⚽"
+                id = family.id,
+                name = family.name,
+                memberCount = family.members.size,
+                memberInitials = family.members.map { extractInitial(it.fullName) },
+                iconUrl = family.iconUrl
             )
-        )
+        }
     }
+
+    private fun extractInitial(fullName: String): String {
+        val first = fullName.trim().firstOrNull { it.isLetterOrDigit() } ?: '?'
+        return first.uppercaseChar().toString()
+    }
+
 }
