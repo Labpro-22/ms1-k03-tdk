@@ -1,5 +1,7 @@
 package com.tdk.nimons360.data.remote
 
+import com.tdk.nimons360.data.model.CreateFamilyRequest
+import com.tdk.nimons360.data.model.CreateFamilyResponse
 import com.tdk.nimons360.data.model.DiscoverFamiliesResponse
 import com.tdk.nimons360.data.model.LoginRequest
 import com.tdk.nimons360.data.model.LoginResponse
@@ -24,4 +26,9 @@ interface ApiService {
 
     @GET("api/families/discover")
     suspend fun getDiscoverFamilies(): Response<DiscoverFamiliesResponse>
+
+    @POST("api/families")
+    suspend fun createFamily(
+        @Body request: CreateFamilyRequest
+    ): Response<CreateFamilyResponse>
 }
