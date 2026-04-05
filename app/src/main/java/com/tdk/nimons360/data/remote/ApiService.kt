@@ -7,9 +7,11 @@ import com.tdk.nimons360.data.model.LoginRequest
 import com.tdk.nimons360.data.model.LoginResponse
 import com.tdk.nimons360.data.model.MeResponse
 import com.tdk.nimons360.data.model.MyFamiliesResponse
+import com.tdk.nimons360.data.model.UpdateMeRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 
 interface ApiService {
@@ -20,6 +22,11 @@ interface ApiService {
 
     @GET("api/me")
     suspend fun getMe(): Response<MeResponse>
+
+    @PATCH("api/me")
+    suspend fun updateMe(
+        @Body request: UpdateMeRequest
+    ): Response<MeResponse>
 
     @GET("api/me/families")
     suspend fun getMyFamilies(): Response<MyFamiliesResponse>

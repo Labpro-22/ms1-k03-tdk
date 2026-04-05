@@ -11,4 +11,9 @@
     <color name="blue_very_soft">#EAF3FF</color>
     <color name="border_soft">#EAE5EE</color>
     <color name="badge_red">#D32F2F</color>
+    <color name="avatar_blue">#1976D2</color>
+    <color name="sign_out_red">#D32F2F</color>
+    <color name="sign_out_bg">#FFF5F5</color>
+    <color name="edit_icon_bg">#E3F2FD</color>
+    <color name="footer_text">#B0ACB5</color>
 </resources>
